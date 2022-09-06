@@ -9,6 +9,7 @@ metadata = LatchMetadata(
     ),
     repository="https://github.com/jvfe/pangolin_latch",
     license="MIT",
+    tags=["NGS", "virus", "lineage"],
 )
 
 metadata.parameters = {
