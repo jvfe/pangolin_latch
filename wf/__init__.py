@@ -1,7 +1,3 @@
-"""
-Low complexity filtering for reads
-"""
-
 import re
 import subprocess
 from dataclasses import dataclass
@@ -9,9 +5,17 @@ from pathlib import Path
 from typing import List, Tuple
 
 from dataclasses_json import dataclass_json
+from flytekit import task
+from flytekitplugins.pod import Pod
+from kubernetes.client.models import (
+    V1Container,
+    V1PodSpec,
+    V1ResourceRequirements,
+    V1Toleration,
+)
 from latch import map_task, message, small_task, workflow
 from latch.resources.launch_plan import LaunchPlan
-from latch.types import LatchFile, file_glob
+from latch.types import LatchFile
 
 from .docs import metadata
 
@@ -24,6 +28,30 @@ class Sample:
 
 
 # From: https://github.com/latch-verified/bulk-rnaseq/blob/64a25531e1ddc43be0afffbde91af03754fb7c8c/wf/__init__.py
+def _get_96_spot_pod() -> Pod:
+    """[ "c6i.24xlarge", "c5.24xlarge", "c5.metal", "c5d.24xlarge", "c5d.metal" ]"""
+
+    primary_container = V1Container(name="primary")
+    resources = V1ResourceRequirements(
+        requests={"cpu": "90", "memory": "170Gi"},
+        limits={"cpu": "96", "memory": "192Gi"},
+    )
+    primary_container.resources = resources
+
+    return Pod(
+        pod_spec=V1PodSpec(
+            containers=[primary_container],
+            tolerations=[
+                V1Toleration(effect="NoSchedule", key="ng", value="cpu-96-spot")
+            ],
+        ),
+        primary_container_name="primary",
+    )
+
+
+large_spot_task = task(task_config=_get_96_spot_pod(), retries=3)
+
+
 def _capture_output(command: List[str]) -> Tuple[int, str]:
     captured_stdout = []
 
@@ -44,12 +72,13 @@ def _capture_output(command: List[str]) -> Tuple[int, str]:
     return returncode, "\n".join(captured_stdout)
 
 
-@small_task
+@large_spot_task
 def pangolin(
     sample: Sample,
 ) -> LatchFile:
 
     output_filename = f"{sample.name}_lineage_report.csv"
+    remote_path = f"latch:///pangolin_outputs/{output_filename}"
     output_file = Path(output_filename).resolve()
 
     _pangolin_cmd = [
@@ -83,7 +112,7 @@ def pangolin(
             )
         raise RuntimeError
 
-    return LatchFile(str(output_file), f"latch:///pangolin_outputs/{output_filename}")
+    return LatchFile(str(output_file), remote_path)
 
 
 @small_task
@@ -123,7 +152,7 @@ LaunchPlan(
         "samples": [
             Sample(
                 name="viral_one",
-                fasta=LatchFile("s3://latch-public/test-data/4318/example_contigs.fa"),
+                fasta=LatchFile("s3://latch-public/test-data/4318/cluster_cov.fasta"),
             )
         ]
     },
