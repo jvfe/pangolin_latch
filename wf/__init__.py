@@ -73,7 +73,7 @@ def _capture_output(command: List[str]) -> Tuple[int, str]:
 
 
 @large_spot_task
-def pangolin(
+def run_pangolin(
     sample: Sample,
 ) -> LatchFile:
 
@@ -141,7 +141,7 @@ def pangolin(samples: List[Sample]) -> LatchFile:
     Pangolin
     ---
     """
-    outputs = map_task(pangolin)(sample=samples)
+    outputs = map_task(run_pangolin)(sample=samples)
     return multiqc(samples=outputs)
 
 
