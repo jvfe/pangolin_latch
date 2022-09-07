@@ -12,12 +12,14 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 RUN conda install mamba -n base -c conda-forge
 
 # Get pangolin and multiqc
-RUN mamba create -y -n pango_env -c bioconda -c conda-forge -c defaults pangolin==4.1.2 multiqc
-ENV META_ENV $CONDA_DIR/envs/pango_env/bin
+RUN mamba install -y -c bioconda -c conda-forge -c defaults pangolin==4.1.2 multiqc
+
+# RUN mamba create -y -n pango_env -c bioconda -c conda-forge -c defaults pangolin==4.1.2 multiqc
+# ENV META_ENV $CONDA_DIR/envs/pango_env/bin
 
 # Create symlink
-RUN ln -s $META_ENV/pangolin /root/pangolin
-RUN ln -s $META_ENV/multiqc /root/multiqc 
+# RUN ln -s $META_ENV/pangolin /root/pangolin
+# RUN ln -s $META_ENV/multiqc /root/multiqc 
 
 
 # STOP HERE:

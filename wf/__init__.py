@@ -82,7 +82,7 @@ def run_pangolin(
     output_file = Path(output_filename).resolve()
 
     _pangolin_cmd = [
-        "/root/pangolin",
+        "pangolin",
         sample.fasta.local_path,
         "--outfile",
         output_filename,
@@ -123,7 +123,7 @@ def multiqc(samples: List[LatchFile]) -> LatchFile:
     output_filename = "pangolin_multiqc_report.html"
     output_file = Path(output_filename).resolve()
 
-    _multiqc_cmd = ["/root/multiqc"]
+    _multiqc_cmd = ["multiqc"]
 
     _multiqc_cmd.extend(files)
 
@@ -147,13 +147,19 @@ def pangolin(samples: List[Sample]) -> LatchFile:
 
 LaunchPlan(
     pangolin,
-    "FASTA files with viral contigs",
+    "FASTA files with viral sequences",
     {
         "samples": [
             Sample(
-                name="viral_one",
+                name="cluster_cov",
                 fasta=LatchFile("s3://latch-public/test-data/4318/cluster_cov.fasta"),
-            )
+            ),
+            Sample(
+                name="sars_sequences",
+                fasta=LatchFile(
+                    "s3://latch-public/test-data/4318/sars_sequences.fasta"
+                ),
+            ),
         ]
     },
 )
